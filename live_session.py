@@ -2,8 +2,8 @@
 import asyncio
 import os
 import json
-import pyaudio
 import numpy as np
+import sounddevice as sd
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -16,16 +16,15 @@ from live_tools import (
     get_seasonal_status,
     get_audio_params
 )
-
+ 
 load_dotenv()
-
+ 
 # ---- AUDIO CONFIG ----
-FORMAT = pyaudio.paInt16
 CHANNELS = 1
 SEND_SAMPLE_RATE = 16000
 RECEIVE_SAMPLE_RATE = 24000
 CHUNK_SIZE = 1024
-
+ 
 TOOL_MAP = {
     "get_full_state": get_full_state,
     "get_ensemble_weights": get_ensemble_weights,
@@ -33,17 +32,17 @@ TOOL_MAP = {
     "get_seasonal_status": get_seasonal_status,
     "get_audio_params": get_audio_params,
 }
-
-SYSTEM_PROMPT = """You are the voice interface for a live WTI crude oil 
-multi-agent forecasting system. You have access to real-time pipeline state 
+ 
+SYSTEM_PROMPT = """You are the voice interface for a live WTI crude oil
+multi-agent forecasting system. You have access to real-time pipeline state
 via function calls. Rules:
-- Always call a tool before answering any question about the market, 
+- Always call a tool before answering any question about the market,
   models, regime, drift, or forecast.
 - Respond in 2-3 sentences maximum using the actual numbers returned.
 - Never guess or use prior knowledge about current market conditions.
 - If asked what you can do, list the four tools available.
 - Speak like a quant analyst, not a chatbot."""
-
+ 
 TOOL_DECLARATIONS = types.Tool(function_declarations=[
     types.FunctionDeclaration(
         name="get_full_state",
@@ -71,78 +70,85 @@ TOOL_DECLARATIONS = types.Tool(function_declarations=[
         parameters=types.Schema(type=types.Type.OBJECT, properties={})
     ),
 ])
-
+ 
+ 
 async def run_live_session():
     print("Loading pipeline state...")
     state = fetch_and_run_pipeline()
     PIPELINE_STATE.update(state)
     print(f"Pipeline ready. Regime: {state.get('regime')} | Drift: {state.get('drift_score', 0):.2f}z")
-
+ 
     client = genai.Client()
-    pya = pyaudio.PyAudio()
-
+ 
     config = types.LiveConnectConfig(
         response_modalities=["AUDIO"],
         tools=[TOOL_DECLARATIONS],
         system_instruction=SYSTEM_PROMPT,
     )
-
+ 
     async with client.aio.live.connect(
         model="gemini-live-2.5-flash-preview",
         config=config
     ) as session:
         print("Live session connected. Start speaking.")
-
+ 
         audio_queue = asyncio.Queue()
         stop_event = asyncio.Event()
-
+        loop = asyncio.get_event_loop()
+ 
         # ---- MIC INPUT ----
         async def capture_mic():
-            mic_stream = await asyncio.to_thread(
-                pya.open,
-                format=FORMAT,
+            def mic_callback(indata, frames, time, status):
+                if status:
+                    print(f"[Mic status: {status}]")
+                audio_bytes = indata.tobytes()
+                asyncio.run_coroutine_threadsafe(
+                    session.send_realtime_input(
+                        audio=types.Blob(
+                            data=audio_bytes,
+                            mime_type="audio/pcm;rate=16000"
+                        )
+                    ),
+                    loop
+                )
+ 
+            with sd.InputStream(
+                samplerate=SEND_SAMPLE_RATE,
                 channels=CHANNELS,
-                rate=SEND_SAMPLE_RATE,
-                input=True,
-                frames_per_buffer=CHUNK_SIZE
-            )
-            try:
+                dtype='int16',
+                blocksize=CHUNK_SIZE,
+                callback=mic_callback
+            ):
                 while not stop_event.is_set():
-                    data = await asyncio.to_thread(
-                        mic_stream.read, CHUNK_SIZE, False
-                    )
-                    await session.send_realtime_input(
-                        audio=types.Blob(data=data, mime_type="audio/pcm;rate=16000")
-                    )
-            finally:
-                mic_stream.stop_stream()
-                mic_stream.close()
-
+                    await asyncio.sleep(0.1)
+ 
         # ---- SPEAKER OUTPUT ----
         async def play_audio():
-            speaker = await asyncio.to_thread(
-                pya.open,
-                format=FORMAT,
+            stream = sd.OutputStream(
+                samplerate=RECEIVE_SAMPLE_RATE,
                 channels=CHANNELS,
-                rate=RECEIVE_SAMPLE_RATE,
-                output=True,
-                frames_per_buffer=CHUNK_SIZE
+                dtype='int16',
+                blocksize=CHUNK_SIZE
             )
+            stream.start()
             try:
                 while not stop_event.is_set():
                     try:
-                        chunk = await asyncio.wait_for(audio_queue.get(), timeout=0.1)
-                        await asyncio.to_thread(speaker.write, chunk)
+                        chunk = await asyncio.wait_for(
+                            audio_queue.get(), timeout=0.1
+                        )
+                        audio_array = np.frombuffer(chunk, dtype=np.int16)
+                        stream.write(audio_array)
                     except asyncio.TimeoutError:
                         continue
             finally:
-                speaker.stop_stream()
-                speaker.close()
-
+                stream.stop()
+                stream.close()
+ 
         # ---- RESPONSE HANDLER ----
         async def handle_responses():
             async for message in session.receive():
-
+ 
                 # Handle function calls
                 if message.tool_call:
                     responses = []
@@ -161,7 +167,7 @@ async def run_live_session():
                             )
                         )
                     await session.send_tool_response(function_responses=responses)
-
+ 
                 # Queue audio chunks for playback
                 if message.server_content:
                     if message.server_content.model_turn:
@@ -170,11 +176,11 @@ async def run_live_session():
                                 await audio_queue.put(part.inline_data.data)
                             if hasattr(part, 'text') and part.text:
                                 print(f"Agent: {part.text}")
-
+ 
                     if message.server_content.turn_complete:
                         print("[Turn complete — listening...]")
-
-        # Run mic, speaker, and response handler concurrently
+ 
+        # Run all three concurrently
         try:
             await asyncio.gather(
                 capture_mic(),
@@ -184,9 +190,7 @@ async def run_live_session():
         except KeyboardInterrupt:
             stop_event.set()
             print("\nSession ended.")
-        finally:
-            pya.terminate()
-
-
+ 
+ 
 if __name__ == "__main__":
     asyncio.run(run_live_session())
