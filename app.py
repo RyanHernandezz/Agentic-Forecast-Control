@@ -73,8 +73,7 @@ with st.expander("Example questions to ask", expanded=False):
 - *"Give me a full system status."*
     """)
 
-# ---- GOVERNANCE HEALTH ----
-with st.expander("🩺 Model Governance — Three Live Checks", expanded=True):
+
  
 # ---- GOVERNANCE HEALTH ----
 with st.expander("🩺 Model Governance — Three Live Checks", expanded=True):
