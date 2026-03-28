@@ -7,3 +7,4 @@ scipy
 google-genai
 asyncio
 plotly
+pyaudio
