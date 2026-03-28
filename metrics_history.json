@@ -1,0 +1,54 @@
+[
+    {
+        "chunk_index": 1,
+        "weights": {
+            "LinearRegression": 0.384,
+            "RandomForest": 0.3506,
+            "ARIMA": 0.2653
+        },
+        "smoothed_rmse_scores": {
+            "LinearRegression": 1.2857,
+            "RandomForest": 1.4082,
+            "ARIMA": 1.8609
+        }
+    },
+    {
+        "chunk_index": 2,
+        "weights": {
+            "LinearRegression": 0.4291,
+            "RandomForest": 0.3193,
+            "ARIMA": 0.2516
+        },
+        "smoothed_rmse_scores": {
+            "LinearRegression": 1.8655,
+            "RandomForest": 2.507,
+            "ARIMA": 3.1808
+        }
+    },
+    {
+        "chunk_index": 3,
+        "weights": {
+            "LinearRegression": 0.3744,
+            "RandomForest": 0.3293,
+            "ARIMA": 0.2963
+        },
+        "smoothed_rmse_scores": {
+            "LinearRegression": 5.0154,
+            "RandomForest": 5.703,
+            "ARIMA": 6.3368
+        }
+    },
+    {
+        "chunk_index": 4,
+        "weights": {
+            "LinearRegression": 0.2794,
+            "RandomForest": 0.314,
+            "ARIMA": 0.4066
+        },
+        "smoothed_rmse_scores": {
+            "LinearRegression": 8.6244,
+            "RandomForest": 7.6747,
+            "ARIMA": 5.9268
+        }
+    }
+]

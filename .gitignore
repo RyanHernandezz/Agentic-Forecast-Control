@@ -1,0 +1,25 @@
+# Environments & Keys
+.env
+.env.local
+.venv/
+venv/
+env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Streamlit Cache
+.streamlit/
+*/.streamlit/
+st_cache/
+
+# Local data / DBs
+*.db
+*.sqlite3
+*.csv
+
+# OS generated files
+.DS_Store
+Thumbs.db

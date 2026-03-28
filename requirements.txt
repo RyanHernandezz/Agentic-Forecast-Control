@@ -1,0 +1,8 @@
+yfinance
+pandas
+scikit-learn
+statsmodels
+numpy
+scipy
+google-genai
+asyncio
