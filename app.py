@@ -40,7 +40,7 @@ def generate_true_future_forecast():
  
 st.set_page_config(page_title="Agentic Forecast Control", layout="wide")
 st.title("🛢️ WTI Crude Oil — Agentic Forecast Control Desk")
-st.caption("Five macro inputs. Three competing models. One ensemble that reweights itself every cycle based on who was right recently.")
+st.caption("Human-in-the-loop control desk for agentic forecasting. Hear the data, interrogate the agents verbally, and manage the broader macro narratives and structural shifts that micro-focused models can't see.")
  
 try:
     pipeline_state = cached_pipeline_run()
@@ -70,7 +70,7 @@ with st.expander("Example questions to ask", expanded=False):
 - *"Is the ensemble drifting from seasonal expectations?"*
 - *"Are any macro inputs anomalous right now?"*
 - *"What do the sonification parameters look like?"*
-- *"Give me a full system status."*
+- *"Can you simulate what high volatility would sound like using the geiger tool?"*
     """)
 
 
@@ -110,7 +110,7 @@ st.plotly_chart(fig_ft, use_container_width=True)
 # ---- SONIFICATION EXPLAINER ----
 st.markdown("#### 🎵 Why Sound?")
 st.info("""
-Markets are temporal processes. Charts are spatial. Sound is the right modality for slowly drifting data that has no single threshold to trigger an alert.
+Markets are temporal processes. Charts are spatial. Sound can be the right modality for slowly drifting data that has no single threshold to trigger an alert.
  
 **Seasonal baseline (Channel 1):** A steady pitch derived from the expected WTI seasonal curve for this month — the note the market *should* be playing.  
 **Ensemble forecast (Channel 2):** Tracks model output. Divergence from Channel 1 creates audible beating — the physical sensation of model disagreement with seasonal expectation.  
