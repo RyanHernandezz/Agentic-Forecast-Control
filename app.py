@@ -56,6 +56,25 @@ weights = pipeline_state.get("structural_weights", {})
 dom_model = max(weights, key=weights.get) if weights else "Unknown"
 col3.metric("Dominant Model", dom_model)
 col4.metric("Its Weight", f"{weights.get(dom_model, 0)*100:.1f}%" if weights else "")
+
+# ---- LIVE API VOICE PANEL ----
+st.markdown("#### 🎙️ Voice Interface — Ask the Pipeline")
+st.info(
+    "Run `python live_session.py` in a terminal to activate the voice layer. "
+    "Then speak directly to the pipeline — ask about regime, drift, ensemble weights, "
+    "or seasonal status. Gemini calls live tool functions and responds with actual model numbers."
+)
+with st.expander("Example questions to ask", expanded=False):
+    st.markdown("""
+- *"What regime are we in and which model is dominant?"*
+- *"Is the ensemble drifting from seasonal expectations?"*
+- *"Are any macro inputs anomalous right now?"*
+- *"What do the sonification parameters look like?"*
+- *"Give me a full system status."*
+    """)
+
+# ---- GOVERNANCE HEALTH ----
+with st.expander("🩺 Model Governance — Three Live Checks", expanded=True):
  
 # ---- GOVERNANCE HEALTH ----
 with st.expander("🩺 Model Governance — Three Live Checks", expanded=True):
